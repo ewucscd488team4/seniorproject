@@ -1,49 +1,46 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using UnityEngine;
 
 public class CameraMovement : MonoBehaviour
 {
     public float speed = 8;
     public float doubleSpeed = 16;
-    public int creatable;
-    public Camera MainCamera, Camera2;//You must create Camera2 for now. Will add Command that creates new camera l8r. 
+    public Camera MainCamera, Camera2;
+    public int availableBox;
+    public int availableCrate;
+    public int availableCylinder;
 
     void Start()
     {
-        creatable = 0;
         MainCamera.gameObject.SetActive(true);
         GameObject.Find("Camera2").transform.position = new Vector3(0.88f, 13.60f, -1.63f);//Still need to find best position
-        
+
         Camera2.gameObject.SetActive(false);
+
+        availableBox = 0;
+        availableCrate = 0;
+        availableCylinder = 0;
     }
 
     void Update()
     {
-    
-        if(Input.GetKey(KeyCode.M) && (Input.GetKey(KeyCode.LeftControl)))//Puts .jpg in project folder. 
-        {
-            ScreenCapture.CaptureScreenshot("UnityProj.jpg");
-        }
-        if (Input.GetKey(KeyCode.L) && (Input.GetKey(KeyCode.LeftControl)))//Left CTRL + L to create Crate
-        {
-            CreateCrate();
-            StartCoroutine(waiter());
-        }
-        if (Input.GetKey(KeyCode.C) && (Input.GetKey(KeyCode.LeftControl)))//Left CTRL + C to create Cylinder
-        {
-            CreateCylinder();
-            StartCoroutine(waiter());
-        }
         if (Input.GetKey(KeyCode.N) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
         {
-            creatable++;
+            availableBox++;
         }
-        if (Input.GetKey(KeyCode.UpArrow) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        if (Input.GetKey(KeyCode.L) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))//Left CTRL + L to create Crate
+        {
+            availableCrate++;
+        }
+        if (Input.GetKey(KeyCode.C) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))//Left CTRL + C to create Cylinder
+        {
+            availableCylinder++;
+        }
+        if (Input.GetKey(KeyCode.Equals) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
             transform.Translate(Vector3.forward * Time.deltaTime * speed);
         }
-        if (Input.GetKey(KeyCode.DownArrow) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        if (Input.GetKey(KeyCode.Minus) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
             transform.Translate(Vector3.back * Time.deltaTime * speed);
         }
@@ -55,13 +52,21 @@ public class CameraMovement : MonoBehaviour
         {
             transform.Translate(Vector3.left * Time.deltaTime * speed);
         }
-        if (Input.GetKey(KeyCode.W) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        if (Input.GetKey(KeyCode.UpArrow) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
             transform.Translate(Vector3.up * Time.deltaTime * speed);
         }
-        if (Input.GetKey(KeyCode.S) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        if (Input.GetKey(KeyCode.DownArrow) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
             transform.Translate(Vector3.down * Time.deltaTime * speed);
+        }
+        if (Input.GetKey(KeyCode.W) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        {
+            transform.Rotate(Vector3.right, -doubleSpeed * Time.deltaTime);
+        }
+        if (Input.GetKey(KeyCode.S) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
+        {
+            transform.Rotate(Vector3.right, doubleSpeed * Time.deltaTime);
         }
         if (Input.GetKey(KeyCode.A) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))
         {
@@ -71,23 +76,30 @@ public class CameraMovement : MonoBehaviour
         {
             transform.Rotate(Vector3.up, doubleSpeed * Time.deltaTime);
         }
-        if (creatable == 1)
+        if (Input.GetKey(KeyCode.F12))//Puts .jpg in project folder. 
         {
-            CreateObject();
+            ScreenCapture.CaptureScreenshot("UnityProj.jpg");
+            Rect notice = new Rect(0, 0, Screen.width / 2, Screen.height / 2);
+            GUI.Box(notice, "Screen Capture Recorded and Placed in Child_Data Folder");
+        }
+        if (availableBox == 1)
+        {
+            CreateObject(10, 10, 20);
             StartCoroutine(Waiter());
         }
-          if(Input.GetKey(KeyCode.Z) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))//switch cameras to MainCamera
+        if (availableCrate == 1)
         {
-                MainCamera.gameObject.SetActive(true);
-                Camera2.gameObject.SetActive(false);
+            CreateCrate(20, 20, 20);
+            StartCoroutine(Waiter());
         }
-        if (Input.GetKey(KeyCode.X) && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))//switch cameras to Camera2
+        if (availableCylinder == 1)
         {
-            MainCamera.gameObject.SetActive(false);
-            Camera2.gameObject.SetActive(true);
+            CreateCylinder(10, 10, 10);
+            StartCoroutine(Waiter());
         }
     }
-    public void CreateObject()
+
+    public void CreateObject(float width, float height, float length) //Create box with input
     {
         GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cube.AddComponent(typeof(Rigidbody));
@@ -95,33 +107,36 @@ public class CameraMovement : MonoBehaviour
         cube.GetComponent<Rigidbody>().isKinematic = false;
         var cubeRenderer = cube.GetComponent<Renderer>();
         cubeRenderer.material.SetColor("_Color", Color.black);
-        cube.transform.localScale = new Vector3(10f, 10f, 10f);
-        cube.transform.position = new Vector3(0, 5f, 0);
+        cube.transform.localScale = new Vector3(width, height, length);
+        cube.transform.position = new Vector3(0, height / 2, 0);
+    }
+
+    public void CreateCylinder(float width, float height, float length)//create standard Cylinder
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        cube.AddComponent(typeof(Rigidbody));
+        cube.AddComponent(typeof(BoxMovement));
+        cube.GetComponent<Rigidbody>().isKinematic = false;
+        var cubeRenderer = cube.GetComponent<Renderer>();
+        cubeRenderer.material.SetColor("_Color", Color.black);
+        cube.transform.localScale = new Vector3(width, height, length);
+        cube.transform.position = new Vector3(0, height / 2, 0);
+    }
+
+    public void CreateCrate(float width, float height, float length)//create standard Crate
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.AddComponent(typeof(Rigidbody));
+        cube.AddComponent(typeof(BoxMovement));
+        cube.transform.localScale = new Vector3(width, height, length);
+        cube.transform.position = new Vector3(0, height / 2, 0);
     }
 
     IEnumerator Waiter()
     {
         yield return new WaitForSeconds(5);
-        creatable = 0;
-    }
-    public void CreateCylinder()//create standard Cylinder
-    {
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.AddComponent(typeof(Rigidbody));
-        cube.AddComponent(typeof(BoxMovement));
-        cube.GetComponent<Rigidbody>().isKinematic = false;
-        var cubeRenderer = cube.GetComponent<Renderer>();
-        cubeRenderer.material.SetColor("_Color", Color.black);
-        cube.transform.localScale = new Vector3(1f, 1f, 1f);
-        cube.transform.position = new Vector3(0, 5f, 0);
-    }
-
-    public void CreateCrate()//create standard Crate
-    {
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.AddComponent(typeof(Rigidbody));
-        cube.AddComponent(typeof(BoxMovement));
-        cube.transform.localScale = new Vector3(2f, 2f, 2f);
-        cube.transform.position = new Vector3(0, 0.5f, 0);
+        availableBox = 0;
+        availableCrate = 0;
+        availableCylinder = 0;
     }
 }
